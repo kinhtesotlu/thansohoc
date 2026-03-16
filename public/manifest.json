@@ -1,0 +1,47 @@
+{
+  "name": "Thần Số Học",
+  "short_name": "Thần Số Học",
+  "description": "Giải mã bản thể qua các con số — Aura Numerology",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0502",
+  "theme_color": "#f97316",
+  "categories": ["lifestyle", "education"],
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Giải Mã Ngay",
+      "short_name": "Giải Mã",
+      "description": "Bắt đầu giải mã thần số học",
+      "url": "/"
+    }
+  ]
+}

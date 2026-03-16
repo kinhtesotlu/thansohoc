@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Calendar, User, ArrowRight, Info, Lock, Star, Moon, Sun, Settings, X, ExternalLink, Eye, EyeOff, Check } from 'lucide-react';
+import { Sparkles, Calendar, User, ArrowRight, Info, Lock, Star, Moon, Sun, Settings, X, ExternalLink, Eye, EyeOff, Check, Download } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { calculateLifePath, calculateNameNumbers, calculatePersonalYear, calculatePinnacles, calculateChallenges, calculateBirthChart } from './utils/numerology';
 import { getNumerologyReading, NumerologyData } from './services/geminiService';
@@ -15,6 +15,81 @@ import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+// ─── PWA Install Banner ────────────────────────────────────────────
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  prompt(): Promise<void>;
+}
+
+function InstallBanner() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('pwa-dismissed') === '1');
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      if (!dismissed) setVisible(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, [dismissed]);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setVisible(false);
+    if (outcome === 'accepted') setDeferredPrompt(null);
+  };
+
+  const handleDismiss = () => {
+    setVisible(false);
+    setDismissed(true);
+    sessionStorage.setItem('pwa-dismissed', '1');
+  };
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        >
+          <div className="max-w-lg mx-auto bg-[#1a1208] border border-orange-500/30 rounded-2xl p-4 shadow-2xl shadow-orange-500/10 flex items-center gap-4">
+            <img src="/icons/icon-192.png" alt="Logo" className="w-12 h-12 rounded-xl flex-shrink-0 object-cover" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">Thêm Thần Số Học</p>
+              <p className="text-xs text-stone-400 mt-0.5">Thêm vào màn hình chính để dùng như ứng dụng</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleInstall}
+                className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-xl transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Cài đặt
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="p-2 text-stone-500 hover:text-stone-300 transition-colors"
+                aria-label="Đóng"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 type System = 'pythagorean' | 'chaldean' | 'kabbalah';
@@ -232,32 +307,48 @@ export default function App() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-12 pb-safe">
+      {/* PWA Install Banner */}
+      <InstallBanner />
+
       {/* Settings Modal */}
       <AnimatePresence>
         {showSettings && <SettingsPanel onClose={handleSettingsClose} />}
       </AnimatePresence>
 
       {/* Header */}
-      <header className="text-center mb-16">
+      <header className="text-center mb-10 md:mb-16">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass mb-6"
+          className="flex flex-col items-center gap-3 mb-6"
         >
-          <Sparkles className="w-4 h-4 text-orange-400" />
-          <span className="text-xs uppercase tracking-widest font-medium text-orange-200">Aura Numerology</span>
+          {/* Logo + App Badge */}
+          <div className="flex items-center gap-3">
+            <img
+              src="/icons/icon-192.png"
+              alt="Thần Số Học Logo"
+              className="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover shadow-lg shadow-orange-500/20"
+            />
+            <div className="text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                <span className="text-[11px] uppercase tracking-widest font-medium text-orange-200">Aura Numerology</span>
+              </div>
+              <p className="text-xs text-stone-500 ml-1">Powered by AI</p>
+            </div>
+          </div>
         </motion.div>
-        <h1 className="text-5xl md:text-7xl font-serif font-light tracking-tight mb-4 bg-gradient-to-b from-white to-stone-500 bg-clip-text text-transparent">
-          Giải Mã Bản Thể
+        <h1 className="text-4xl md:text-7xl font-serif font-light tracking-tight mb-4 bg-gradient-to-b from-white to-stone-500 bg-clip-text text-transparent">
+          Thần Số Học
         </h1>
-        <p className="text-stone-400 max-w-lg mx-auto text-lg">
+        <p className="text-stone-400 max-w-lg mx-auto text-base md:text-lg px-2">
           Khám phá những rung động ẩn giấu qua các con số và thấu hiểu vận mệnh của bạn.
         </p>
       </header>
 
       {/* Navigation Menu */}
-      <nav className="flex justify-center gap-2 mb-12">
+      <nav className="flex justify-center gap-2 mb-8 md:mb-12 overflow-x-auto px-2 scrollbar-none">
         {(['pythagorean', 'chaldean', 'kabbalah'] as System[]).map((sys) => (
           <button
             key={sys}
@@ -276,13 +367,13 @@ export default function App() {
         ))}
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         {/* Input Section */}
         <div className="lg:col-span-5">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="glass rounded-3xl p-8 sticky top-8"
+            className="glass rounded-3xl p-6 md:p-8 lg:sticky lg:top-8"
           >
             <h2 className="text-xl font-serif mb-6 flex items-center gap-2">
               <Info className="w-5 h-5 text-orange-400" />
@@ -413,7 +504,7 @@ export default function App() {
                 className="space-y-8"
               >
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 md:gap-4">
                   {[
                     { label: 'Chủ Đạo', value: results.lifePath, icon: Sun, desc: 'Tổng Ngày + Tháng + Năm sinh' },
                     { label: 'Sứ Mệnh', value: results.expression, icon: Star, desc: 'Tổng tất cả chữ cái trong tên' },
@@ -575,7 +666,7 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-20 pt-8 border-t border-white/5 text-center text-stone-600 text-sm">
+      <footer className="mt-12 md:mt-20 pt-8 border-t border-white/5 text-center text-stone-600 text-sm mb-6">
         <p>© 2026 Aura Numerology. All rights reserved.</p>
         <p className="mt-1">Hệ thống Chaldean & Kabbalah đang được phát triển.</p>
       </footer>
